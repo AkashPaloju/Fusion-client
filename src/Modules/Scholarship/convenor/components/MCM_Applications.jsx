@@ -2,41 +2,83 @@
 /* eslint-disable jsx-a11y/click-events-have-key-events */
 import React, { useState, useEffect } from "react";
 import { Table, Button } from "@mantine/core";
+import axios from "axios";
 import styles from "./MCM_applications.module.css";
 import Medal_applications from "./medal_applications";
 
-function MCM_Applications() {
+function MCMApplications() {
   const [activeTab, setActiveTab] = useState("MCM");
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const fetchApplications = async () => {
+    try {
+      const token = localStorage.getItem("authToken");
+      const response = await fetch(
+        "http://127.0.0.1:8000/spacs/scholarship-details/",
+        {
+          headers: {
+            Authorization: `Token ${token}`,
+          },
+        },
+      );
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      setApplications(data); // Assuming data is an array of application objects
+      setLoading(false);
+    } catch (error) {
+      console.error("Failed to fetch scholarship details:", error);
+      setLoading(false);
+    }
+  };
   // Fetch scholarship details from the API
   useEffect(() => {
-    const fetchApplications = async () => {
-      try {
-        const token = localStorage.getItem("authToken");
-        const response = await fetch(
-          "http://127.0.0.1:8000/spacs/scholarship-details/",
-          {
-            headers: {
-              Authorization: `Token ${token}`,
-            },
-          },
-        );
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const data = await response.json();
-        setApplications(data); // Assuming data is an array of application objects
-        setLoading(false);
-      } catch (error) {
-        console.error("Failed to fetch scholarship details:", error);
-        setLoading(false);
-      }
-    };
-
     fetchApplications();
   }, []);
+
+  // Handle MCM status update
+  const handleApproval = async (id, action) => {
+    try {
+      const token = localStorage.getItem("authToken");
+
+      if (!token) {
+        console.log("No authorization token found in localStorage.");
+        return;
+      }
+
+      const apiUrl = "http://127.0.0.1:8000/spacs/mcm/status-update/";
+      const payload = {
+        id,
+        status:
+          action === "approved"
+            ? "ACCEPTED"
+            : action === "rejected"
+              ? "REJECTED"
+              : "UNDER_REVIEW",
+      };
+
+      console.log("Sending payload:", payload);
+
+      const response = await axios.post(apiUrl, payload, {
+        headers: {
+          Authorization: `Token ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (response.status === 200) {
+        alert("Status updated successfully");
+        console.log("Status updated successfully");
+        fetchApplications(); // Refresh application list
+      } else {
+        console.error("Error updating status:", response);
+      }
+    } catch (error) {
+      console.error("Error updating status:", error.response || error.message);
+    }
+  };
 
   return (
     <div className={styles.container}>
@@ -89,24 +131,48 @@ function MCM_Applications() {
                     </tr>
                   </thead>
                   <tbody>
-                    {applications.map((app, index) => (
-                      <tr key={index}>
-                        <td>{app.student}</td>
-                        <td>{app.annual_income}</td>
-                        <td>
-                          <Button color="blue">Files</Button>
-                        </td>
-                        <td>
-                          <Button color="green">Accept</Button>
-                        </td>
-                        <td>
-                          <Button color="red">Reject</Button>
-                        </td>
-                        <td>
-                          <Button color="grey">Under Review</Button>
-                        </td>
-                      </tr>
-                    ))}
+                    {applications.map(
+                      (app, index) =>
+                        app.status !== "REJECTED" && (
+                          <tr key={index}>
+                            <td>{app.student}</td>
+                            <td>{app.annual_income}</td>
+                            <td>
+                              <Button color="blue">Files</Button>
+                            </td>
+                            <td>
+                              <Button
+                                color="green"
+                                onClick={() =>
+                                  handleApproval(app.id, "approved")
+                                }
+                              >
+                                Accept
+                              </Button>
+                            </td>
+                            <td>
+                              <Button
+                                color="red"
+                                onClick={() =>
+                                  handleApproval(app.id, "rejected")
+                                }
+                              >
+                                Reject
+                              </Button>
+                            </td>
+                            <td>
+                              <Button
+                                color="gray"
+                                onClick={() =>
+                                  handleApproval(app.id, "under_review")
+                                }
+                              >
+                                Under Review
+                              </Button>
+                            </td>
+                          </tr>
+                        ),
+                    )}
                   </tbody>
                 </Table>
               </div>
@@ -120,4 +186,4 @@ function MCM_Applications() {
   );
 }
 
-export default MCM_Applications;
+export default MCMApplications;
