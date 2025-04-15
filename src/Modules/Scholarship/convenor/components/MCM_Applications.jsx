@@ -164,14 +164,15 @@ function MCMApplications() {
       },
     );
 
-    // Create ZIP and add the Excel file to it using JSZip
-    const zip = new JSZip();
-    zip.file("applications.xlsx", excelBlob);
-    zip.generateAsync({ type: "blob" }).then((content) => {
-      saveAs(content, "applications.zip");
-    });
+    const excelUrl = URL.createObjectURL(excelBlob);
+    const link = document.createElement("a");
+    link.href = excelUrl;
+    link.download = "applications.xlsx";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 
-    alert("ZIP file containing all application details downloaded!");
+    alert("Excel file containing all application details downloaded!");
   };
 
   const handleDownloadFiles = async (app) => {
