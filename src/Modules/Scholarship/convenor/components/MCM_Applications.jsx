@@ -12,11 +12,19 @@ import {
   scholarshipNotification,
 } from "../../../../routes/SPACSRoutes";
 import { host } from "../../../../routes/globalRoutes";
+import { Select } from "@mantine/core";
+import { CaretDown } from "@phosphor-icons/react";
+import { Text } from "@mantine/core";
+
+
 
 function MCMApplications() {
   const [activeTab, setActiveTab] = useState("MCM");
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [sortBy, setSortBy] = useState("");
+  const [sortOrder, setSortOrder] = useState("asc");
+
 
   const fetchApplications = async () => {
     try {
@@ -211,6 +219,16 @@ function MCMApplications() {
     alert("ZIP file containing all files of the application downloaded!");
   };
 
+  const sortedApplications = [...applications].sort((a, b) => {
+    if (!sortBy) return 0;
+    const valA = typeof a[sortBy] === "string" ? a[sortBy].toLowerCase() : a[sortBy];
+    const valB = typeof b[sortBy] === "string" ? b[sortBy].toLowerCase() : b[sortBy];
+
+    if (valA < valB) return sortOrder === "asc" ? -1 : 1;
+    if (valA > valB) return sortOrder === "asc" ? 1 : -1;
+    return 0;
+  });
+
   return (
     <div className={styles.container}>
       <div className={styles.whiteBox}>
@@ -261,6 +279,42 @@ function MCMApplications() {
                 >
                   Export All
                 </button>
+
+                <div className={styles.sortControls}>
+                  <div className={styles.sortItem}>
+                    <Select
+                      label="Sort By"
+                      placeholder="Select column"
+                      value={sortBy}
+                      onChange={setSortBy}
+                      data={[
+                        { value: "annual_income", label: "Income" },
+                        { value: "student", label: "Roll No" },
+                        { value: "date", label: "Date" },
+                      ]}
+                      rightSection={<CaretDown />}
+                    />
+                  </div>
+                  <div className={styles.sortItem}>
+                    <Select
+                      label="Order"
+                      placeholder="Select order"
+                      value={sortOrder}
+                      onChange={setSortOrder}
+                      data={[
+                        { value: "asc", label: "Ascending" },
+                        { value: "desc", label: "Descending" },
+                      ]}
+                      rightSection={<CaretDown />}
+                    />
+                  </div>
+                  {sortBy && (
+                    <Text size="sm" mt="xs">
+                      Sorted by {sortBy} ({sortOrder})
+                    </Text>
+                  )}
+                </div>
+
                 <div className={styles.tableWrapper}>
                   <Table className={styles.table}>
                     <thead>
@@ -274,7 +328,7 @@ function MCMApplications() {
                       </tr>
                     </thead>
                     <tbody>
-                      {applications.map(
+                      {sortedApplications.map(
                         (app, index) =>
                           app.status !== "REJECTED" && (
                             <tr key={index}>

@@ -63,7 +63,7 @@
 .table {
   border-collapse: collapse;
   border-style: hidden;
-  margin-top: 80px;
+  margin-top: 20px;
   width: 100%; /* Ensure table takes full width */
 }
 
@@ -126,4 +126,18 @@ tr:nth-child(odd) {
     text-align: left;
     font-weight: bold;
   }
+}
+
+
+.sortControls {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-end;
+  margin-top: 1.5rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.sortItem {
+  min-width: 200px;
 }

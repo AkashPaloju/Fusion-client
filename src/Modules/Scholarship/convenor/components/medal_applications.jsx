@@ -15,12 +15,18 @@ import {
   scholarshipNotification,
 } from "../../../../routes/SPACSRoutes";
 import { host } from "../../../../routes/globalRoutes";
+import { Select } from "@mantine/core";
+import { CaretDown } from "@phosphor-icons/react";
+import { Text } from "@mantine/core";
+
 
 function MedalApplications() {
   const [selectedAward, setSelectedAward] = useState("Director's Silver Medal");
   const [medals, setMedals] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [sortBy, setSortBy] = useState("");
+  const [sortOrder, setSortOrder] = useState("asc");
 
   // Fetch medals data based on the selected award
   const fetchMedalsData = async () => {
@@ -246,6 +252,16 @@ function MedalApplications() {
     alert("ZIP file containing all marksheets and Excel file downloaded!");
   };
 
+  const sortedMedals = [...medals].sort((a, b) => {
+    if (!sortBy) return 0;
+    const valA = typeof a[sortBy] === "string" ? a[sortBy].toLowerCase() : a[sortBy];
+    const valB = typeof b[sortBy] === "string" ? b[sortBy].toLowerCase() : b[sortBy];
+
+    if (valA < valB) return sortOrder === "asc" ? -1 : 1;
+    if (valA > valB) return sortOrder === "asc" ? 1 : -1;
+    return 0;
+  });
+
   return (
     <div className={styles.container}>
       <h2 className={styles.title}>Medal Applications</h2>
@@ -277,55 +293,91 @@ function MedalApplications() {
       {isLoading && <p>Loading medals...</p>}
 
       {!isLoading && !error && medals.length > 0 && (
-        <table className={styles.table}>
-          <thead>
-            <tr>
-              <th>Roll No</th>
-              <th>Award</th>
-              <th>File</th>
-              <th>Accept</th>
-              <th>Reject</th>
-            </tr>
-          </thead>
-          <tbody>
-            {medals.map((medal, index) => (
-              <tr key={index}>
-                <td>{medal.student}</td>
-                <td>{selectedAward}</td>
-                <td>
-                  <a
-                    href={`${host}${medal.Marksheet}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={`${styles.button} ${styles.fileButton}`}
-                  >
-                    View Marksheet
-                  </a>
-                </td>
-                <td>
-                  <button
-                    className={`${styles.button} ${styles.acceptButton}`}
-                    onClick={() =>
-                      handleAction(medal.id, "approved", medal.student)
-                    }
-                  >
-                    Approve
-                  </button>
-                </td>
-                <td>
-                  <button
-                    className={`${styles.button} ${styles.rejectButton}`}
-                    onClick={() =>
-                      handleAction(medal.id, "rejected", medal.student)
-                    }
-                  >
-                    Reject
-                  </button>
-                </td>
+        <>
+          <div className={styles.sortControls}>
+            <div className={styles.sortItem}>
+              <Select
+                label="Sort By"
+                placeholder="Select column"
+                value={sortBy}
+                onChange={setSortBy}
+                data={[
+                  { value: "student", label: "Roll No" },
+                  { value: "date", label: "Date" },
+                ]}
+                rightSection={<CaretDown />}
+              />
+            </div>
+            <div className={styles.sortItem}>
+              <Select
+                label="Order"
+                placeholder="Select order"
+                value={sortOrder}
+                onChange={setSortOrder}
+                data={[
+                  { value: "asc", label: "Ascending" },
+                  { value: "desc", label: "Descending" },
+                ]}
+                rightSection={<CaretDown />}
+              />
+            </div>
+            {sortBy && (
+              <Text size="sm" mt="xs">
+                Sorted by {sortBy} ({sortOrder})
+              </Text>
+            )}
+          </div>
+
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th>Roll No</th>
+                <th>Award</th>
+                <th>File</th>
+                <th>Accept</th>
+                <th>Reject</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {medals.map((medal, index) => (
+                <tr key={index}>
+                  <td>{medal.student}</td>
+                  <td>{selectedAward}</td>
+                  <td>
+                    <a
+                      href={`${host}${medal.Marksheet}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`${styles.button} ${styles.fileButton}`}
+                    >
+                      View Marksheet
+                    </a>
+                  </td>
+                  <td>
+                    <button
+                      className={`${styles.button} ${styles.acceptButton}`}
+                      onClick={() =>
+                        handleAction(medal.id, "approved", medal.student)
+                      }
+                    >
+                      Approve
+                    </button>
+                  </td>
+                  <td>
+                    <button
+                      className={`${styles.button} ${styles.rejectButton}`}
+                      onClick={() =>
+                        handleAction(medal.id, "rejected", medal.student)
+                      }
+                    >
+                      Reject
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </>
       )}
 
       {!isLoading && !error && medals.length === 0 && <p>No medals found.</p>}

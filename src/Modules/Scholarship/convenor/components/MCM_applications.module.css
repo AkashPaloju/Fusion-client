@@ -79,3 +79,16 @@ h2 {
     padding: 8px; /* Reduce padding on smaller screens */
   }
 }
+
+.sortControls {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-end;
+  margin-top: 1.5rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.sortItem {
+  min-width: 200px;
+}

@@ -12,6 +12,8 @@ function PreviousWinners() {
   const [winners, setWinners] = useState([]);
   const [showTable, setShowTable] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [sortBy, setSortBy] = useState("");
+  const [sortOrder, setSortOrder] = useState("asc");
 
   const awardMapping = {
     "Director's Gold": 2,
@@ -43,14 +45,12 @@ function PreviousWinners() {
       });
 
       if (response.data.result === "Success") {
-        console.log(response.data);
         const { student_name, student_program, roll } = response.data;
         const winnersArray = student_name.map((name, index) => ({
           name,
           program: student_program[index],
           roll: roll[index],
         }));
-
         setWinners(winnersArray);
       } else {
         console.error("No winners found:", response.data.error);
@@ -59,12 +59,21 @@ function PreviousWinners() {
       setWinners([]);
       console.error(
         "Error fetching winners:",
-        error.response ? error.response.data : error.message,
+        error.response ? error.response.data : error.message
       );
     } finally {
       setIsLoading(false);
     }
   };
+
+  const sortedWinners = [...winners].sort((a, b) => {
+    if (!sortBy) return 0;
+    const valA = a[sortBy].toLowerCase?.() || a[sortBy];
+    const valB = b[sortBy].toLowerCase?.() || b[sortBy];
+    if (valA < valB) return sortOrder === "asc" ? -1 : 1;
+    if (valA > valB) return sortOrder === "asc" ? 1 : -1;
+    return 0;
+  });
 
   return (
     <div className={styles.wrapper}>
@@ -128,26 +137,63 @@ function PreviousWinners() {
           {isLoading ? (
             <Loader size="lg" />
           ) : winners.length > 0 ? (
-            <div className={styles.tableContainer}>
-              <Table className={styles.table}>
-                <thead>
-                  <tr>
-                    <th>Name</th>
-                    <th>Roll No</th>
-                    <th>Program</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {winners.map((winner, index) => (
-                    <tr key={index}>
-                      <td>{winner.name}</td>
-                      <td>{winner.roll}</td>
-                      <td>{winner.program}</td>
+            <>
+              <div className={styles.sortControls}>
+                <div className={styles.sortItem}>
+                  <Select
+                    label="Sort By"
+                    placeholder="Select column"
+                    value={sortBy}
+                    onChange={setSortBy}
+                    data={[
+                      { value: "name", label: "Name" },
+                      { value: "roll", label: "Roll No" },
+                      { value: "program", label: "Program" },
+                    ]}
+                    rightSection={<CaretDown />}
+                  />
+                </div>
+                <div className={styles.sortItem}>
+                  <Select
+                    label="Order"
+                    placeholder="Select order"
+                    value={sortOrder}
+                    onChange={setSortOrder}
+                    data={[
+                      { value: "asc", label: "Ascending" },
+                      { value: "desc", label: "Descending" },
+                    ]}
+                    rightSection={<CaretDown />}
+                  />
+                </div>
+                {sortBy && (
+                  <Text size="sm" mt="xs">
+                    Sorted by {sortBy} ({sortOrder})
+                  </Text>
+                )}
+              </div>
+
+              <div className={styles.tableContainer}>
+                <Table className={styles.table}>
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Roll No</th>
+                      <th>Program</th>
                     </tr>
-                  ))}
-                </tbody>
-              </Table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {sortedWinners.map((winner, index) => (
+                      <tr key={index}>
+                        <td>{winner.name}</td>
+                        <td>{winner.roll}</td>
+                        <td>{winner.program}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </Table>
+              </div>
+            </>
           ) : (
             <Text>No winners found</Text>
           )}
