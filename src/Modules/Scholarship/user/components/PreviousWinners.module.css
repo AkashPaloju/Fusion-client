@@ -105,3 +105,10 @@ tr:nth-child(odd) {
 .sortItem {
   min-width: 200px;
 }
+
+.exportButtons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px; /* Adjust spacing as needed */
+  margin-top: 1rem;
+}

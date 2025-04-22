@@ -1,7 +1,23 @@
 import { useState } from "react";
 import { CaretDown } from "@phosphor-icons/react";
 import axios from "axios";
-import { Select, Button, Table, Text, Loader } from "@mantine/core";
+import {
+  Select,
+  Button,
+  Text,
+  Box,
+  Loader,
+} from "@mantine/core";
+import {
+  MantineReactTable,
+  useMantineReactTable,
+} from "mantine-react-table";
+import {
+  mkConfig,
+  generateCsv,
+  download,
+} from "export-to-csv";
+import { IconDownload } from "@tabler/icons-react";
 import styles from "./previousWinnersC.module.css";
 import { getPreviousWinnersRoute } from "../../../../routes/SPACSRoutes";
 
@@ -10,10 +26,8 @@ function PreviousWinners() {
   const [academicYear, setAcademicYear] = useState("");
   const [award, setAward] = useState("");
   const [winners, setWinners] = useState([]);
-  const [showTable, setShowTable] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [sortBy, setSortBy] = useState("");
-  const [sortOrder, setSortOrder] = useState("asc");
+  const [showTable, setShowTable] = useState(false);
 
   const awardMapping = {
     "Director's Gold": 2,
@@ -23,11 +37,18 @@ function PreviousWinners() {
     "D&M Proficiency Gold Medal": 5,
   };
 
+  const csvConfig = mkConfig({
+    fieldSeparator: ",",
+    decimalSeparator: ".",
+    useKeysAsHeaders: true,
+    filename: "previous-winners",
+  });
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     const awardId = awardMapping[award];
-    setShowTable(true);
     setIsLoading(true);
+    setShowTable(true);
 
     const formData = {
       programme,
@@ -45,89 +66,145 @@ function PreviousWinners() {
       });
 
       if (response.data.result === "Success") {
-        console.log(response.data);
         const { student_name, student_program, roll } = response.data;
         const winnersArray = student_name.map((name, index) => ({
           name,
-          program: student_program[index],
           roll: roll[index],
+          program: student_program[index],
         }));
-
         setWinners(winnersArray);
       } else {
+        setWinners([]);
         console.error("No winners found:", response.data.error);
       }
     } catch (error) {
       setWinners([]);
-      console.error(
-        "Error fetching winners:",
-        error.response ? error.response.data : error.message,
-      );
+      console.error("Error fetching winners:", error);
     } finally {
       setIsLoading(false);
     }
   };
-  const sortedWinners = [...winners].sort((a, b) => {
-    if (!sortBy) return 0;
-    const valA = a[sortBy].toLowerCase?.() || a[sortBy];
-    const valB = b[sortBy].toLowerCase?.() || b[sortBy];
-    if (valA < valB) return sortOrder === "asc" ? -1 : 1;
-    if (valA > valB) return sortOrder === "asc" ? 1 : -1;
-    return 0;
+
+  const columns = [
+    { accessorKey: "name", header: "Name", size: 200 },
+    { accessorKey: "roll", header: "Roll No", size: 120 },
+    { accessorKey: "program", header: "Program", size: 180 },
+  ];
+
+  const handleExportRows = (rows) => {
+    const rowData = rows.map((row) => row.original);
+    const csv = generateCsv(csvConfig)(rowData);
+    download(csvConfig)(csv);
+  };
+
+  const handleExportAllData = () => {
+    const csv = generateCsv(csvConfig)(winners);
+    download(csvConfig)(csv);
+  };
+
+  const table = useMantineReactTable({
+    columns,
+    data: winners,
+    enableRowSelection: true,
+    enableSorting: true,
+    columnFilterDisplayMode: "popover",
+    paginationDisplayMode: "pages",
+    positionToolbarAlertBanner: "bottom",
+    renderTopToolbarCustomActions: ({ table }) => (
+      <Box className={styles.exportButtons}>
+        <Button
+          color="blue"
+          onClick={handleExportAllData}
+          leftIcon={<IconDownload />}
+          className="expbtn"
+        >
+          Export All Data
+        </Button>
+        <Button
+          disabled={table.getPrePaginationRowModel().rows.length === 0}
+          onClick={() =>
+            handleExportRows(table.getPrePaginationRowModel().rows)
+          }
+          leftIcon={<IconDownload />}
+          className="expbtn"
+        >
+          Export All Rows
+        </Button>
+        <Button
+          disabled={table.getRowModel().rows.length === 0}
+          onClick={() => handleExportRows(table.getRowModel().rows)}
+          leftIcon={<IconDownload />}
+          className="expbtn"
+        >
+          Export Page Rows
+        </Button>
+        <Button
+          disabled={
+            !table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected()
+          }
+          onClick={() =>
+            handleExportRows(table.getSelectedRowModel().rows)
+          }
+          leftIcon={<IconDownload />}
+          className="expbtn"
+        >
+          Export Selected Rows
+        </Button>
+      </Box>
+    ),
   });
 
   return (
     <div className={styles.wrapper}>
       <form onSubmit={handleSubmit}>
         <div className={styles.formRow}>
-          <div className={styles.formItem}>
-            <Select
-              label="Programme"
-              placeholder="Select Programme"
-              value={programme}
-              onChange={setProgramme}
-              data={[
-                { value: "B.Tech", label: "B.Tech" },
-                { value: "M.Tech", label: "M.Tech" },
-                { value: "B.Des", label: "B.Des" },
-                { value: "M.Des", label: "M.Des" },
-                { value: "PhD", label: "PhD" },
-              ]}
-              rightSection={<CaretDown />}
-            />
-          </div>
+          <Select
+            label="Programme"
+            placeholder="Select Programme"
+            value={programme}
+            onChange={setProgramme}
+            data={[
+              { value: "B.Tech", label: "B.Tech" },
+              { value: "M.Tech", label: "M.Tech" },
+              { value: "B.Des", label: "B.Des" },
+              { value: "M.Des", label: "M.Des" },
+              { value: "PhD", label: "PhD" },
+            ]}
+            rightSection={<CaretDown />}
+            className={styles.formItem}
+          />
 
-          <div className={styles.formItem}>
-            <Select
-              label="Academic Year"
-              placeholder="Select Year"
-              value={academicYear}
-              onChange={setAcademicYear}
-              data={[...Array(11).keys()].map((i) => ({
-                value: `${2014 + i}`,
-                label: `${2014 + i}`,
-              }))}
-              rightSection={<CaretDown />}
-            />
-          </div>
+          <Select
+            label="Academic Year"
+            placeholder="Select Year"
+            value={academicYear}
+            onChange={setAcademicYear}
+            data={[...Array(11).keys()].map((i) => ({
+              value: `${2014 + i}`,
+              label: `${2014 + i}`,
+            }))}
+            rightSection={<CaretDown />}
+            className={styles.formItem}
+          />
 
-          <div className={styles.formItem}>
-            <Select
-              label="Scholarship/Awards"
-              placeholder="Select Award"
-              value={award}
-              onChange={setAward}
-              data={Object.keys(awardMapping).map((awardName) => ({
-                value: awardName,
-                label: awardName,
-              }))}
-              rightSection={<CaretDown />}
-            />
-          </div>
+          <Select
+            label="Scholarship/Awards"
+            placeholder="Select Award"
+            value={award}
+            onChange={setAward}
+            data={Object.keys(awardMapping).map((awardName) => ({
+              value: awardName,
+              label: awardName,
+            }))}
+            rightSection={<CaretDown />}
+            className={styles.formItem}
+          />
         </div>
 
         <div className={styles.buttonContainer}>
-          <Button type="submit">Submit</Button>
+          <Button type="submit" disabled={isLoading}>
+            {isLoading ? "Submitting..." : "Submit"}
+          </Button>
         </div>
       </form>
 
@@ -135,62 +212,8 @@ function PreviousWinners() {
         <div className={styles.winnersList}>
           {isLoading ? (
             <Loader size="lg" />
-          ) : sortedWinners.length > 0 ? (
-            <>
-              <div className={styles.sortControls}>
-                <div className={styles.sortItem}>
-                  <Select
-                    label="Sort By"
-                    placeholder="Select column"
-                    value={sortBy}
-                    onChange={setSortBy}
-                    data={[
-                      { value: "name", label: "Name" },
-                      { value: "roll", label: "Roll No" },
-                      { value: "program", label: "Program" },
-                    ]}
-                    rightSection={<CaretDown />}
-                  />
-                </div>
-                <div className={styles.sortItem}>
-                  <Select
-                    label="Order"
-                    placeholder="Select order"
-                    value={sortOrder}
-                    onChange={setSortOrder}
-                    data={[
-                      { value: "asc", label: "Ascending" },
-                      { value: "desc", label: "Descending" },
-                    ]}
-                    rightSection={<CaretDown />}
-                  />
-                </div>
-                {sortBy && (
-                  <Text size="sm" mt="xs">
-                    Sorted by {sortBy} ({sortOrder})
-                  </Text>
-                )}
-              </div>
-              <div className={styles.tableContainer}>
-                <Table className={styles.table}>
-                  <thead>
-                    <tr>
-                      <th>Name</th>
-                      <th>Roll No</th>
-                      <th>Program</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {sortedWinners.map((winner, index) => (
-                      <tr key={index}>
-                        <td>{winner.name}</td>
-                        <td>{winner.roll}</td>
-                        <td>{winner.program}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </Table>
-              </div></>
+          ) : winners.length > 0 ? (
+            <MantineReactTable table={table} />
           ) : (
             <Text>No winners found</Text>
           )}
