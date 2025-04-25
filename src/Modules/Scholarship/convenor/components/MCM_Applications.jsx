@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { Button, Loader, Text } from "@mantine/core";
+import {Loader, Text, Button } from "@mantine/core";
+import { Button as MantineButton } from "@mantine/core";
 import { MantineReactTable } from "mantine-react-table";
 import { IconDownload } from '@tabler/icons-react';
 import { mkConfig, generateCsv, download } from "export-to-csv";
@@ -11,12 +12,20 @@ import {
 } from "../../../../routes/SPACSRoutes";
 import styles from "./MCM_applications.module.css";
 import MedalApplications from "./medal_applications";
+import { Modal } from "@mantine/core";
+import { host } from "../../../../routes/globalRoutes";
+
+
+
+
 
 function MCMApplications() {
   const [activeTab, setActiveTab] = useState("MCM");
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [fileModalOpened, setFileModalOpened] = useState(false);
+  const [selectedFiles, setSelectedFiles] = useState(null);
 
   // Fetch applications
   const fetchApplications = async () => {
@@ -71,25 +80,25 @@ function MCMApplications() {
       console.error("⛔️ No auth token—cannot approve/reject");
       return;
     }
-  
+
     const payload = {
       id,
       status:
         action === "approved"
           ? "ACCEPTED"
           : action === "rejected"
-          ? "REJECTED"
-          : "UNDER_REVIEW",
+            ? "REJECTED"
+            : "UNDER_REVIEW",
     };
-  
+
     console.log("🔼 Sending payload:", payload);
-  
+
     try {
       const res = await axios.post(updateMCMStatusRoute, payload, {
         headers: { Authorization: `Token ${token}` },
       });
       console.log("✅ Response from server:", res.status, res.data);
-  
+
       if (res.status === 200) {
         fetchApplications(); // this should refetch data
       } else {
@@ -102,7 +111,7 @@ function MCMApplications() {
       }
     }
   };
-  
+
 
   // Combined action
   const handleAction = async (id, action, student) => {
@@ -142,7 +151,10 @@ function MCMApplications() {
         accessorKey: "files",
         header: "Files",
         Cell: ({ row }) => (
-          <Button size="xs" onClick={() => {/* implement file viewer */}}>
+          <Button size="xs" onClick={() => {
+            setSelectedFiles(row.original);
+            setFileModalOpened(true);
+          }}>
             View Files
           </Button>
         ),
@@ -230,15 +242,48 @@ function MCMApplications() {
                 onClick: (e) => e.stopPropagation(),
               }}
               renderTopToolbarCustomActions={() => (
-                <Button
-                  leftIcon={<IconDownload />}
+                <MantineButton
+                  leftSection={<IconDownload />}
                   onClick={handleExportAll}
                 >
                   Export All CSV
-                </Button>
-              )}
+                </MantineButton>
+              )}              
             />
           )}
+          <Modal
+            opened={fileModalOpened}
+            onClose={() => setFileModalOpened(false)}
+            title="Uploaded Files"
+            size="lg"
+          >
+            {selectedFiles ? (
+              <div className={styles.fileModalContainer}>
+                {[
+                  ["Aadhar Card", selectedFiles.Aadhar_card],
+                  ["Affidavit", selectedFiles.Affidavit],
+                  ["Bank Details", selectedFiles.Bank_details],
+                  ["Fee Receipt", selectedFiles.Fee_Receipt],
+                  ["Marksheet", selectedFiles.Marksheet],
+                  ["Income Certificate", selectedFiles.income_certificate],
+                ].map(([label, path]) =>
+                  path ? (
+                    <a
+                      className={styles.fileLink}
+                      key={label}
+                      href={`${host}${path}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {label}
+                    </a>
+                  ) : null
+                )}
+              </div>
+            ) : (
+              <Text>No files found.</Text>
+            )}
+          </Modal>
         </>
       )}
 
