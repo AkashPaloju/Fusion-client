@@ -52,7 +52,6 @@ h2 {
 }
 
 .table th {
-  background-color: #f0f0f0;
   font-weight: bold;
   position: sticky;
   top: 0; /* Sticky header */
@@ -116,3 +115,24 @@ h2 {
   text-decoration: underline;
 }
 
+
+.exportButtonWrapper {
+  display: flex;
+  justify-content: space-between; /* pushes content to the extreme right */
+  width: 100%;
+  margin: 10px; /* optional spacing */
+}
+
+.customHeader svg {
+  color: black;
+  background-color: transparent;
+}
+
+/* MCM_applications.module.css */
+.stripedRow:nth-child(even) {
+  background-color: #dad7d7;
+}
+
+.stripedRow:nth-child(odd) {
+  background-color: #ffffff;
+}

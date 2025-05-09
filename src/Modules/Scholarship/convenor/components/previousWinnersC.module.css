@@ -112,3 +112,15 @@ tr:nth-child(odd) {
   gap: 12px; /* Adjust spacing as needed */
   margin-top: 1rem;
 }
+
+.exportButtons {
+  display: flex;
+  justify-content: space-between; /* pushes content to the extreme right */
+  width: 100%;
+  margin: 10px; /* optional spacing */
+}
+
+.export{
+  display: flex;
+  gap: 5px;
+}
