@@ -198,7 +198,7 @@ function MedalApplications() {
         id: "actions",
         header: "Actions",
         Cell: ({ row }) => (
-          <Box className={styles.exportButtons}>
+          <Box className={styles.statusButtons}>
             <Button
               size="xs"
               color="green"

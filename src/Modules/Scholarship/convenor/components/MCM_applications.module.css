@@ -128,11 +128,3 @@ h2 {
   background-color: transparent;
 }
 
-/* MCM_applications.module.css */
-.stripedRow:nth-child(even) {
-  background-color: #dad7d7;
-}
-
-.stripedRow:nth-child(odd) {
-  background-color: #ffffff;
-}

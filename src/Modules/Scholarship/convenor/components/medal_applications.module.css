@@ -137,3 +137,8 @@
   display: flex;
   gap: 10px;
 }
+
+.statusButtons{
+  display: flex;
+  gap: 8px;
+}
